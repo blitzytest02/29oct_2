@@ -363,16 +363,18 @@ def authenticated_client(app, client, db_session):
         
         # Create a test user
         test_user = User(
-            email='test_user@example.com',
-            # Note: Ensure password is properly hashed if User model requires it
+            email='test_user@example.com'
         )
+        # Set password using the User model's set_password method
+        test_user.set_password('TestPassword123!')
         
         # Add user to database
         db_session.add(test_user)
         db_session.commit()
         
         # Generate access token for the test user
-        access_token = create_access_token(identity=test_user.id)
+        # Note: identity must be a string for Flask-JWT-Extended
+        access_token = create_access_token(identity=str(test_user.id))
         
         # Configure client with Authorization header
         client.environ_base['HTTP_AUTHORIZATION'] = f'Bearer {access_token}'
