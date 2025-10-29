@@ -196,19 +196,24 @@ def test_register_new_user_success(client, db_session, valid_registration_data):
     
     # Verify response contains user data
     response_data = response.get_json()
-    assert 'id' in response_data, "Response should include user ID"
-    assert response_data['email'] == valid_registration_data['email']
-    assert response_data['first_name'] == valid_registration_data['first_name']
-    assert response_data['last_name'] == valid_registration_data['last_name']
+    assert 'user' in response_data, "Response should include user object"
+    assert 'token' in response_data, "Response should include JWT token"
+    assert 'refresh_token' in response_data, "Response should include refresh token"
+    
+    user_data = response_data['user']
+    assert 'id' in user_data, "User object should include user ID"
+    assert user_data['email'] == valid_registration_data['email']
+    assert user_data['first_name'] == valid_registration_data['first_name']
+    assert user_data['last_name'] == valid_registration_data['last_name']
     
     # Verify password is NOT in response (security critical)
-    assert 'password' not in response_data, "Password should never be in response"
-    assert 'password_hash' not in response_data, "Password hash should never be in response"
+    assert 'password' not in user_data, "Password should never be in response"
+    assert 'password_hash' not in user_data, "Password hash should never be in response"
     
     # Verify user was created in database
     user = User.query.filter_by(email=valid_registration_data['email']).first()
     assert user is not None, "User should be created in database"
-    assert user.id == response_data['id']
+    assert user.id == user_data['id']
     assert user.email == valid_registration_data['email']
     
     # Verify password was hashed (not stored in plain text)
@@ -244,8 +249,13 @@ def test_register_duplicate_email_fails(client, db_session, existing_user, valid
     # Verify error message
     response_data = response.get_json()
     assert 'error' in response_data or 'message' in response_data
-    error_message = response_data.get('error') or response_data.get('message', '')
-    assert 'email' in error_message.lower() or 'exists' in error_message.lower() or 'duplicate' in error_message.lower()
+    error_obj = response_data.get('error') or response_data.get('message', '')
+    # Error can be a dict with 'message' key or a string
+    if isinstance(error_obj, dict):
+        error_message = error_obj.get('message', '').lower()
+    else:
+        error_message = str(error_obj).lower()
+    assert 'email' in error_message or 'exists' in error_message or 'duplicate' in error_message or 'registered' in error_message
     
     # Verify no duplicate user was created
     users_with_email = User.query.filter_by(email=existing_user.email).all()
@@ -254,7 +264,8 @@ def test_register_duplicate_email_fails(client, db_session, existing_user, valid
 
 @pytest.mark.integration
 @pytest.mark.api
-def test_register_with_weak_password_fails(client, weak_password_data):
+@pytest.mark.database
+def test_register_with_weak_password_fails(client, db_session, weak_password_data):
     """
     Test that registration fails with weak password.
     
@@ -278,8 +289,13 @@ def test_register_with_weak_password_fails(client, weak_password_data):
     # Verify error message mentions password
     response_data = response.get_json()
     assert 'error' in response_data or 'message' in response_data
-    error_message = response_data.get('error') or response_data.get('message', '')
-    assert 'password' in error_message.lower()
+    error_obj = response_data.get('error') or response_data.get('message', '')
+    # Error can be a dict with 'message' key or a string
+    if isinstance(error_obj, dict):
+        error_message = error_obj.get('message', '').lower()
+    else:
+        error_message = str(error_obj).lower()
+    assert 'password' in error_message
     
     # Verify no user was created
     user = User.query.filter_by(email=weak_password_data['email']).first()
@@ -288,7 +304,8 @@ def test_register_with_weak_password_fails(client, weak_password_data):
 
 @pytest.mark.integration
 @pytest.mark.api
-def test_register_with_invalid_email_fails(client, invalid_email_data):
+@pytest.mark.database
+def test_register_with_invalid_email_fails(client, db_session, invalid_email_data):
     """
     Test that registration fails with invalid email format.
     
@@ -305,8 +322,13 @@ def test_register_with_invalid_email_fails(client, invalid_email_data):
     # Verify error message mentions email
     response_data = response.get_json()
     assert 'error' in response_data or 'message' in response_data
-    error_message = response_data.get('error') or response_data.get('message', '')
-    assert 'email' in error_message.lower() or 'invalid' in error_message.lower()
+    error_obj = response_data.get('error') or response_data.get('message', '')
+    # Error can be a dict with 'message' key or a string
+    if isinstance(error_obj, dict):
+        error_message = error_obj.get('message', '').lower()
+    else:
+        error_message = str(error_obj).lower()
+    assert 'email' in error_message or 'invalid' in error_message
     
     # Verify no user was created
     user = User.query.filter_by(email=invalid_email_data['email']).first()
@@ -379,7 +401,8 @@ def test_register_creates_database_record(client, db_session, valid_registration
 
 @pytest.mark.integration
 @pytest.mark.api
-def test_register_returns_user_without_password(client, valid_registration_data):
+@pytest.mark.database
+def test_register_returns_user_without_password(client, db_session, valid_registration_data):
     """
     Test that registration response excludes sensitive password data.
     
@@ -395,17 +418,23 @@ def test_register_returns_user_without_password(client, valid_registration_data)
     
     response_data = response.get_json()
     
+    # Response should have user object
+    assert 'user' in response_data, "Response should include user object"
+    user_data = response_data['user']
+    
     # Security critical: password fields must NOT be in response
+    assert 'password' not in user_data
+    assert 'password_hash' not in user_data
     assert 'password' not in response_data
     assert 'password_hash' not in response_data
     
-    # Safe fields should be present
-    assert 'id' in response_data
-    assert 'email' in response_data
-    assert 'first_name' in response_data
-    assert 'last_name' in response_data
-    assert 'role' in response_data
-    assert 'is_active' in response_data
+    # Safe fields should be present in user object
+    assert 'id' in user_data
+    assert 'email' in user_data
+    assert 'first_name' in user_data
+    assert 'last_name' in user_data
+    assert 'role' in user_data
+    assert 'is_active' in user_data
 
 
 # ============================================================================
@@ -460,7 +489,8 @@ def test_login_with_valid_credentials_success(client, db_session, existing_user)
 
 @pytest.mark.integration
 @pytest.mark.api
-def test_login_with_invalid_password_fails(client, existing_user):
+@pytest.mark.database
+def test_login_with_invalid_password_fails(client, db_session, existing_user):
     """
     Test that login fails with incorrect password.
     
@@ -492,7 +522,8 @@ def test_login_with_invalid_password_fails(client, existing_user):
 
 @pytest.mark.integration
 @pytest.mark.api
-def test_login_with_nonexistent_email_fails(client):
+@pytest.mark.database
+def test_login_with_nonexistent_email_fails(client, db_session):
     """
     Test that login fails with email that doesn't exist.
     
@@ -611,8 +642,9 @@ def test_login_creates_session(client, db_session, existing_user):
 
 @pytest.mark.integration
 @pytest.mark.api
+@pytest.mark.database
 @pytest.mark.slow
-def test_login_rate_limiting(client, existing_user):
+def test_login_rate_limiting(client, db_session, existing_user):
     """
     Test that login endpoint enforces rate limiting.
     
@@ -686,7 +718,7 @@ def test_login_with_inactive_account_fails(client, db_session, inactive_user):
 @pytest.mark.integration
 @pytest.mark.api
 @pytest.mark.database
-def test_token_generation_on_login(client, existing_user, app):
+def test_token_generation_on_login(client, db_session, existing_user, app):
     """
     Test JWT token generation and structure on successful login.
     
@@ -737,7 +769,8 @@ def test_token_generation_on_login(client, existing_user, app):
 
 @pytest.mark.integration
 @pytest.mark.api
-def test_token_expiration_handling(client, existing_user, app):
+@pytest.mark.database
+def test_token_expiration_handling(client, db_session, existing_user, app):
     """
     Test handling of expired JWT tokens.
     
@@ -756,7 +789,7 @@ def test_token_expiration_handling(client, existing_user, app):
 @pytest.mark.integration
 @pytest.mark.api
 @pytest.mark.database
-def test_token_refresh_flow(client, existing_user):
+def test_token_refresh_flow(client, db_session, existing_user):
     """
     Test JWT token refresh functionality.
     
@@ -792,7 +825,8 @@ def test_token_refresh_flow(client, existing_user):
 
 @pytest.mark.integration
 @pytest.mark.api
-def test_invalid_token_rejected(client):
+@pytest.mark.database
+def test_invalid_token_rejected(client, db_session):
     """
     Test that malformed or tampered tokens are rejected.
     
@@ -824,7 +858,7 @@ def test_invalid_token_rejected(client):
 @pytest.mark.integration
 @pytest.mark.api
 @pytest.mark.database
-def test_token_revocation(client, existing_user):
+def test_token_revocation(client, db_session, existing_user):
     """
     Test token revocation/blacklisting on logout.
     
@@ -872,7 +906,7 @@ def test_token_revocation(client, existing_user):
 @pytest.mark.integration
 @pytest.mark.api
 @pytest.mark.database
-def test_token_includes_user_claims(client, existing_user, admin_user, app):
+def test_token_includes_user_claims(client, db_session, existing_user, admin_user, app):
     """
     Test that JWT tokens include necessary user claims.
     
@@ -934,7 +968,7 @@ def test_token_includes_user_claims(client, existing_user, admin_user, app):
 @pytest.mark.integration
 @pytest.mark.api
 @pytest.mark.database
-def test_multiple_simultaneous_tokens(client, existing_user):
+def test_multiple_simultaneous_tokens(client, db_session, existing_user):
     """
     Test support for multiple concurrent sessions/tokens.
     
@@ -997,7 +1031,8 @@ def test_access_protected_route_with_valid_token(authenticated_client):
 
 @pytest.mark.integration
 @pytest.mark.api
-def test_access_protected_route_without_token_fails(client):
+@pytest.mark.database
+def test_access_protected_route_without_token_fails(client, db_session):
     """
     Test that protected routes require authentication.
     
@@ -1018,7 +1053,8 @@ def test_access_protected_route_without_token_fails(client):
 
 @pytest.mark.integration
 @pytest.mark.api
-def test_access_protected_route_with_expired_token_fails(client):
+@pytest.mark.database
+def test_access_protected_route_with_expired_token_fails(client, db_session):
     """
     Test that expired tokens cannot access protected routes.
     
@@ -1041,7 +1077,8 @@ def test_access_protected_route_with_expired_token_fails(client):
 
 @pytest.mark.integration
 @pytest.mark.api
-def test_access_protected_route_with_invalid_token_fails(client):
+@pytest.mark.database
+def test_access_protected_route_with_invalid_token_fails(client, db_session):
     """
     Test that invalid/malformed tokens cannot access protected routes.
     
@@ -1141,7 +1178,7 @@ def test_admin_only_route_requires_admin_role(client, db_session, existing_user,
 @pytest.mark.integration
 @pytest.mark.api
 @pytest.mark.database
-def test_user_cannot_access_admin_routes(client, existing_user):
+def test_user_cannot_access_admin_routes(client, db_session, existing_user):
     """
     Test that regular users are blocked from admin routes.
     
@@ -1178,7 +1215,7 @@ def test_user_cannot_access_admin_routes(client, existing_user):
 @pytest.mark.integration
 @pytest.mark.api
 @pytest.mark.database
-def test_permission_based_access_control(client, existing_user):
+def test_permission_based_access_control(client, db_session, existing_user):
     """
     Test granular permission-based access control.
     
@@ -1280,9 +1317,10 @@ def test_superuser_bypass_permissions(client, db_session):
 
 @pytest.mark.integration
 @pytest.mark.api
+@pytest.mark.database
 @pytest.mark.external
 @responses.activate
-def test_request_password_reset_sends_email(client, existing_user):
+def test_request_password_reset_sends_email(client, db_session, existing_user):
     """
     Test password reset request generates token and sends email.
     
@@ -1368,7 +1406,8 @@ def test_reset_password_with_valid_token(client, existing_user, db_session):
 
 @pytest.mark.integration
 @pytest.mark.api
-def test_reset_password_with_expired_token_fails(client):
+@pytest.mark.database
+def test_reset_password_with_expired_token_fails(client, db_session):
     """
     Test that expired password reset tokens are rejected.
     
@@ -1397,7 +1436,8 @@ def test_reset_password_with_expired_token_fails(client):
 
 @pytest.mark.integration
 @pytest.mark.api
-def test_reset_password_with_invalid_token_fails(client):
+@pytest.mark.database
+def test_reset_password_with_invalid_token_fails(client, db_session):
     """
     Test that invalid/malformed reset tokens are rejected.
     
@@ -1421,7 +1461,7 @@ def test_reset_password_with_invalid_token_fails(client):
 @pytest.mark.integration
 @pytest.mark.api
 @pytest.mark.database
-def test_reset_token_single_use(client, existing_user):
+def test_reset_token_single_use(client, db_session, existing_user):
     """
     Test that password reset tokens can only be used once.
     
@@ -1530,7 +1570,8 @@ def test_logout_clears_session(client, existing_user, db_session):
 
 @pytest.mark.integration
 @pytest.mark.api
-def test_access_after_logout_fails(client, existing_user):
+@pytest.mark.database
+def test_access_after_logout_fails(client, db_session, existing_user):
     """
     Test that accessing protected routes fails after logout.
     
@@ -1565,7 +1606,7 @@ def test_access_after_logout_fails(client, existing_user):
 @pytest.mark.integration
 @pytest.mark.api
 @pytest.mark.database
-def test_logout_all_sessions(client, existing_user):
+def test_logout_all_sessions(client, db_session, existing_user):
     """
     Test logout from all devices/sessions simultaneously.
     
@@ -1631,7 +1672,8 @@ def test_full_user_journey_register_login_access_logout(client, db_session):
     register_response = client.post('/api/auth/register', json=registration_data)
     assert register_response.status_code == 201, "Registration should succeed"
     register_data = register_response.get_json()
-    user_id = register_data.get('id')
+    user = register_data.get('user', {})
+    user_id = user.get('id')
     assert user_id is not None
     
     # Step 2: Login with new credentials
@@ -1669,7 +1711,7 @@ def test_full_user_journey_register_login_access_logout(client, db_session):
 @pytest.mark.integration
 @pytest.mark.api
 @pytest.mark.database
-def test_concurrent_login_attempts(client, existing_user):
+def test_concurrent_login_attempts(client, db_session, existing_user):
     """
     Test handling of concurrent login attempts from same user.
     
@@ -1700,7 +1742,7 @@ def test_concurrent_login_attempts(client, existing_user):
 @pytest.mark.integration
 @pytest.mark.api
 @pytest.mark.database
-def test_authentication_with_remember_me(client, existing_user):
+def test_authentication_with_remember_me(client, db_session, existing_user):
     """
     Test extended session duration with remember me option.
     
@@ -1727,7 +1769,7 @@ def test_authentication_with_remember_me(client, existing_user):
 @pytest.mark.api
 @pytest.mark.database
 @pytest.mark.external
-def test_two_factor_authentication_flow(client, existing_user):
+def test_two_factor_authentication_flow(client, db_session, existing_user):
     """
     Test two-factor authentication workflow if implemented.
     
