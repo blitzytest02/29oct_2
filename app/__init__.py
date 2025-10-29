@@ -320,10 +320,12 @@ def _register_error_handlers(app):
     @app.errorhandler(400)
     def bad_request_error(error):
         """Handle 400 Bad Request errors."""
+        # Preserve custom error description if provided
+        message = error.description if hasattr(error, 'description') and error.description != 'Bad Request' else 'Bad request. The request data is invalid or malformed.'
         return jsonify({
             'error': {
                 'status': 400,
-                'message': 'Bad request. The request data is invalid or malformed.',
+                'message': message,
                 'type': 'BadRequest'
             }
         }), 400
@@ -331,10 +333,12 @@ def _register_error_handlers(app):
     @app.errorhandler(401)
     def unauthorized_error(error):
         """Handle 401 Unauthorized errors."""
+        # Preserve custom error description if provided
+        message = error.description if hasattr(error, 'description') and error.description != 'Unauthorized' else 'Unauthorized. Authentication is required.'
         return jsonify({
             'error': {
                 'status': 401,
-                'message': 'Unauthorized. Authentication is required.',
+                'message': message,
                 'type': 'Unauthorized'
             }
         }), 401

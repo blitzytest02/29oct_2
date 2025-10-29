@@ -433,7 +433,7 @@ def test_validation_error_handler(authenticated_client):
 
 
 @pytest.mark.unit
-def test_authentication_error_handler(client):
+def test_authentication_error_handler(client, mocker):
     """
     Test custom AuthenticationError handler.
     
@@ -445,6 +445,11 @@ def test_authentication_error_handler(client):
         - Error message indicates authentication failure
         - No sensitive information leaked
     """
+    # Mock AuthService to return None (invalid credentials)
+    mock_service = MagicMock()
+    mock_service.authenticate_user.return_value = None
+    mocker.patch('app.routes.auth.AuthService', return_value=mock_service)
+    
     # Attempt authentication with invalid credentials
     response = client.post(
         '/api/auth/login',

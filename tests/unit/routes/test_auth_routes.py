@@ -158,6 +158,51 @@ def mock_rate_limiter(mocker):
     return mock_limiter
 
 
+@pytest.fixture
+def mock_jwt_decorators(mocker):
+    """
+    Mock Flask-JWT-Extended decorators for testing JWT-protected routes.
+    
+    This fixture bypasses JWT token validation for unit tests, allowing
+    tests to focus on route logic without needing real JWT tokens.
+    Mock jwt_required, get_jwt_identity, and get_jwt functions.
+    
+    Args:
+        mocker: pytest-mock fixture for creating mock objects
+    
+    Returns:
+        dict: Dictionary containing mocked JWT functions
+    
+    Example:
+        def test_protected_route(client, mock_jwt_decorators):
+            mock_jwt_decorators['get_jwt_identity'].return_value = '123'
+            response = client.post('/api/auth/logout',
+                                    headers={'Authorization': 'Bearer fake_token'})
+            assert response.status_code == 200
+    """
+    # Mock jwt_required decorator to pass through without validation
+    def jwt_required_mock(optional=False, refresh=False, locations=None):
+        def decorator(fn):
+            return fn
+        return decorator
+    
+    # Mock get_jwt_identity to return a test user ID
+    # Patch at flask_jwt_extended level to ensure it affects the decorator
+    mock_identity = mocker.patch('flask_jwt_extended.get_jwt_identity', return_value='1')
+    
+    # Mock get_jwt to return test JWT data
+    mock_jwt = mocker.patch('flask_jwt_extended.get_jwt', return_value={'jti': 'test-jti-123'})
+    
+    # Mock the jwt_required decorator itself at flask_jwt_extended level
+    mocker.patch('flask_jwt_extended.jwt_required', jwt_required_mock)
+    
+    return {
+        'get_jwt_identity': mock_identity,
+        'get_jwt': mock_jwt,
+        'jwt_required': jwt_required_mock
+    }
+
+
 # ============================================================================
 # TEST CLASS: LOGIN ENDPOINT
 # ============================================================================
@@ -260,7 +305,7 @@ class TestAuthLogin:
         assert response.status_code == 401
         
         response_data = json.loads(response.data)
-        assert 'error' in response_data or 'message' in response_data
+        assert 'error' in response_data or 'message' in response_data or 'msg' in response_data
         assert 'token' not in response_data
         assert 'user' not in response_data
         
@@ -298,7 +343,7 @@ class TestAuthLogin:
         assert response.status_code == 401
         
         response_data = json.loads(response.data)
-        assert 'error' in response_data or 'message' in response_data
+        assert 'error' in response_data or 'message' in response_data or 'msg' in response_data
         assert 'token' not in response_data
         
         # Verify service was called
@@ -328,7 +373,7 @@ class TestAuthLogin:
         })
         assert response.status_code == 400
         response_data = json.loads(response.data)
-        assert 'error' in response_data or 'message' in response_data
+        assert 'error' in response_data or 'message' in response_data or 'msg' in response_data
         
         # Test case 2: Missing password
         response = client.post('/api/auth/login', json={
@@ -336,13 +381,13 @@ class TestAuthLogin:
         })
         assert response.status_code == 400
         response_data = json.loads(response.data)
-        assert 'error' in response_data or 'message' in response_data
+        assert 'error' in response_data or 'message' in response_data or 'msg' in response_data
         
         # Test case 3: Missing both fields
         response = client.post('/api/auth/login', json={})
         assert response.status_code == 400
         response_data = json.loads(response.data)
-        assert 'error' in response_data or 'message' in response_data
+        assert 'error' in response_data or 'message' in response_data or 'msg' in response_data
     
     def test_login_exceeds_rate_limit(self, client, mock_rate_limiter):
         """
@@ -374,7 +419,7 @@ class TestAuthLogin:
         assert response.status_code == 429
         
         response_data = json.loads(response.data)
-        assert 'error' in response_data or 'message' in response_data
+        assert 'error' in response_data or 'message' in response_data or 'msg' in response_data
         
         # Check for rate limit indicators in response
         error_message = str(response_data.get('error', response_data.get('message', ''))).lower()
@@ -491,7 +536,7 @@ class TestAuthRegister:
         assert response.status_code == 409
         
         response_data = json.loads(response.data)
-        assert 'error' in response_data or 'message' in response_data
+        assert 'error' in response_data or 'message' in response_data or 'msg' in response_data
         
         # Check error message mentions email or duplicate
         error_message = str(response_data.get('error', response_data.get('message', ''))).lower()
@@ -535,7 +580,7 @@ class TestAuthRegister:
             assert response.status_code == 400, f"Failed for email: {invalid_email}"
             
             response_data = json.loads(response.data)
-            assert 'error' in response_data or 'message' in response_data
+            assert 'error' in response_data or 'message' in response_data or 'msg' in response_data
     
     def test_register_with_weak_password(self, client):
         """
@@ -575,7 +620,7 @@ class TestAuthRegister:
             assert response.status_code == 400, f"Failed for password: {weak_password}"
             
             response_data = json.loads(response.data)
-            assert 'error' in response_data or 'message' in response_data
+            assert 'error' in response_data or 'message' in response_data or 'msg' in response_data
             
             # Check error mentions password
             error_message = str(response_data.get('error', response_data.get('message', ''))).lower()
@@ -604,7 +649,7 @@ class TestAuthRegister:
         })
         assert response.status_code == 400
         response_data = json.loads(response.data)
-        assert 'error' in response_data or 'message' in response_data
+        assert 'error' in response_data or 'message' in response_data or 'msg' in response_data
         
         # Test case 2: Missing password
         response = client.post('/api/auth/register', json={
@@ -614,7 +659,7 @@ class TestAuthRegister:
         })
         assert response.status_code == 400
         response_data = json.loads(response.data)
-        assert 'error' in response_data or 'message' in response_data
+        assert 'error' in response_data or 'message' in response_data or 'msg' in response_data
         
         # Test case 3: Missing first_name
         response = client.post('/api/auth/register', json={
@@ -624,7 +669,7 @@ class TestAuthRegister:
         })
         assert response.status_code == 400
         response_data = json.loads(response.data)
-        assert 'error' in response_data or 'message' in response_data
+        assert 'error' in response_data or 'message' in response_data or 'msg' in response_data
         
         # Test case 4: Missing last_name
         response = client.post('/api/auth/register', json={
@@ -634,13 +679,13 @@ class TestAuthRegister:
         })
         assert response.status_code == 400
         response_data = json.loads(response.data)
-        assert 'error' in response_data or 'message' in response_data
+        assert 'error' in response_data or 'message' in response_data or 'msg' in response_data
         
         # Test case 5: Empty request body
         response = client.post('/api/auth/register', json={})
         assert response.status_code == 400
         response_data = json.loads(response.data)
-        assert 'error' in response_data or 'message' in response_data
+        assert 'error' in response_data or 'message' in response_data or 'msg' in response_data
 
 
 # ============================================================================
@@ -663,7 +708,7 @@ class TestAuthLogout:
     All tests mock external dependencies to ensure fast, isolated unit testing.
     """
     
-    def test_logout_with_valid_token(self, client, mock_auth_service):
+    def test_logout_with_valid_token(self, app, db_session, mock_auth_service):
         """
         Test successful logout with valid authentication token.
         
@@ -676,14 +721,29 @@ class TestAuthLogout:
         - Token is invalidated (blacklisted or session removed)
         
         Args:
-            client: Flask test client fixture
+            app: Flask application fixture
+            db_session: Database session fixture
             mock_auth_service: Mocked AuthService fixture
         """
-        # Arrange: Configure mock to return successful logout
+        # Arrange: Create a real user and JWT token
+        from app.models.user import User
+        from flask_jwt_extended import create_access_token
+        
+        # Create test user
+        user = User(email='test@example.com', first_name='Test', last_name='User')
+        user.set_password('TestPassword123!')
+        db_session.add(user)
+        db_session.commit()
+        
+        # Generate real JWT token
+        access_token = create_access_token(identity=str(user.id))
+        
+        # Configure mock to return successful logout
         mock_auth_service.logout_user.return_value = {'message': 'Logged out successfully'}
         
-        # Simulate authenticated request with JWT token
-        headers = {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.valid_token'}
+        # Create client with authentication header
+        client = app.test_client()
+        headers = {'Authorization': f'Bearer {access_token}'}
         
         # Act: Make logout request with authentication
         response = client.post('/api/auth/logout', headers=headers)
@@ -718,17 +778,17 @@ class TestAuthLogout:
         assert response.status_code == 401
         
         response_data = json.loads(response.data)
-        assert 'error' in response_data or 'message' in response_data
+        assert 'error' in response_data or 'message' in response_data or 'msg' in response_data
     
     def test_logout_with_invalid_token(self, client, mock_auth_service):
         """
         Test logout with invalid or expired authentication token.
         
         Scenario: User provides malformed or expired JWT token
-        Expected: Returns 401 Unauthorized with token error
+        Expected: Returns 401 or 422 with token error
         
         Verifies:
-        - HTTP status code is 401 Unauthorized
+        - HTTP status code is 401 or 422
         - Response indicates token is invalid or expired
         
         Args:
@@ -744,13 +804,13 @@ class TestAuthLogout:
         # Act: Make logout request with invalid token
         response = client.post('/api/auth/logout', headers=headers)
         
-        # Assert: Verify unauthorized response
-        assert response.status_code == 401
+        # Assert: Verify unauthorized or unprocessable response (JWT validation fails before route)
+        assert response.status_code in [401, 422]
         
         response_data = json.loads(response.data)
-        assert 'error' in response_data or 'message' in response_data
+        assert 'error' in response_data or 'message' in response_data or 'msg' in response_data
     
-    def test_logout_token_invalidation(self, client, mock_auth_service):
+    def test_logout_token_invalidation(self, app, db_session, mock_auth_service):
         """
         Test that logout properly invalidates the authentication token.
         
@@ -762,13 +822,29 @@ class TestAuthLogout:
         - Token cannot be reused after logout
         
         Args:
-            client: Flask test client fixture
+            app: Flask application fixture
+            db_session: Database session fixture
             mock_auth_service: Mocked AuthService fixture
         """
-        # Arrange: Configure mock for successful logout
+        # Arrange: Create a real user and JWT token
+        from app.models.user import User
+        from flask_jwt_extended import create_access_token
+        
+        # Create test user
+        user = User(email='test@example.com', first_name='Test', last_name='User')
+        user.set_password('TestPassword123!')
+        db_session.add(user)
+        db_session.commit()
+        
+        # Generate real JWT token
+        access_token = create_access_token(identity=str(user.id))
+        
+        # Configure mock for successful logout
         mock_auth_service.logout_user.return_value = {'message': 'Logged out'}
-        token = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test_token'
-        headers = {'Authorization': token}
+        
+        # Create client with authentication header
+        client = app.test_client()
+        headers = {'Authorization': f'Bearer {access_token}'}
         
         # Act: Perform logout
         response = client.post('/api/auth/logout', headers=headers)
@@ -803,7 +879,7 @@ class TestAuthRefresh:
     All tests mock external dependencies to ensure fast, isolated unit testing.
     """
     
-    def test_refresh_with_valid_token(self, client, mock_auth_service):
+    def test_refresh_with_valid_token(self, app, db_session, mock_auth_service):
         """
         Test successful token refresh with valid refresh token.
         
@@ -817,10 +893,24 @@ class TestAuthRefresh:
         - Refresh token may be rotated (new refresh token provided)
         
         Args:
-            client: Flask test client fixture
+            app: Flask application fixture
+            db_session: Database session fixture
             mock_auth_service: Mocked AuthService fixture
         """
-        # Arrange: Configure mock to return new tokens
+        # Arrange: Create a real user and JWT token
+        from app.models.user import User
+        from flask_jwt_extended import create_refresh_token
+        
+        # Create test user
+        user = User(email='test@example.com', first_name='Test', last_name='User')
+        user.set_password('TestPassword123!')
+        db_session.add(user)
+        db_session.commit()
+        
+        # Generate real refresh token (note: using create_refresh_token, not create_access_token)
+        refresh_token = create_refresh_token(identity=str(user.id))
+        
+        # Configure mock to return new tokens
         mock_auth_service.refresh_token.return_value = {
             'access_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.new_access_token',
             'refresh_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.new_refresh_token',
@@ -828,8 +918,9 @@ class TestAuthRefresh:
             'expires_in': 3600
         }
         
-        # Simulate request with valid refresh token
-        headers = {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.refresh_token'}
+        # Create client with refresh token
+        client = app.test_client()
+        headers = {'Authorization': f'Bearer {refresh_token}'}
         
         # Act: Make refresh request
         response = client.post('/api/auth/refresh', headers=headers)
@@ -851,10 +942,10 @@ class TestAuthRefresh:
         Test token refresh with invalid or expired refresh token.
         
         Scenario: User provides malformed or expired refresh token
-        Expected: Returns 401 Unauthorized with error message
+        Expected: Returns 401 or 422 (JWT validation error)
         
         Verifies:
-        - HTTP status code is 401 Unauthorized
+        - HTTP status code is 401 Unauthorized or 422 Unprocessable Entity
         - Response contains error about invalid token
         - No new tokens are issued
         
@@ -871,15 +962,15 @@ class TestAuthRefresh:
         # Act: Make refresh request with invalid token
         response = client.post('/api/auth/refresh', headers=headers)
         
-        # Assert: Verify unauthorized response
-        assert response.status_code == 401
+        # Assert: Verify unauthorized response (Flask-JWT-Extended returns 422 for invalid tokens)
+        assert response.status_code in [401, 422]
         
         response_data = json.loads(response.data)
-        assert 'error' in response_data or 'message' in response_data
+        assert 'error' in response_data or 'message' in response_data or 'msg' in response_data
         
-        # Check error mentions token
-        error_message = str(response_data.get('error', response_data.get('message', ''))).lower()
-        assert 'token' in error_message or 'invalid' in error_message
+        # Check error mentions token or JWT error (Flask-JWT-Extended may return "not enough segments")
+        error_message = str(response_data.get('error', response_data.get('message', response_data.get('msg', '')))).lower()
+        assert 'token' in error_message or 'invalid' in error_message or 'segment' in error_message
     
     def test_refresh_without_token(self, client):
         """
@@ -902,7 +993,7 @@ class TestAuthRefresh:
         assert response.status_code == 401
         
         response_data = json.loads(response.data)
-        assert 'error' in response_data or 'message' in response_data
+        assert 'error' in response_data or 'message' in response_data or 'msg' in response_data
     
     def test_refresh_with_access_token_instead_of_refresh(self, client, mock_auth_service):
         """
@@ -933,9 +1024,9 @@ class TestAuthRefresh:
         assert response.status_code in [401, 422]
         
         response_data = json.loads(response.data)
-        assert 'error' in response_data or 'message' in response_data
+        assert 'error' in response_data or 'message' in response_data or 'msg' in response_data
     
-    def test_refresh_token_rotation(self, client, mock_auth_service):
+    def test_refresh_token_rotation(self, app, db_session, mock_auth_service):
         """
         Test that refresh endpoint implements token rotation security.
         
@@ -945,21 +1036,37 @@ class TestAuthRefresh:
         Verifies:
         - Response includes new access token
         - Response includes new refresh token (rotation)
-        - Old refresh token is invalidated
+        - Old refresh token is different from new one
         
         Args:
-            client: Flask test client fixture
+            app: Flask application fixture
+            db_session: Database session fixture
             mock_auth_service: Mocked AuthService fixture
         """
-        # Arrange: Configure mock to return rotated tokens
+        # Arrange: Create a real user and JWT token
+        from app.models.user import User
+        from flask_jwt_extended import create_refresh_token
+        
+        # Create test user
+        user = User(email='test@example.com', first_name='Test', last_name='User')
+        user.set_password('TestPassword123!')
+        db_session.add(user)
+        db_session.commit()
+        
+        # Generate real refresh token
+        old_refresh_token = create_refresh_token(identity=str(user.id))
+        
+        # Configure mock to return rotated tokens
+        new_refresh_token_value = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.new_refresh'
         mock_auth_service.refresh_token.return_value = {
             'access_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.new_access',
-            'refresh_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.new_refresh',
+            'refresh_token': new_refresh_token_value,
             'token_type': 'Bearer',
             'expires_in': 3600
         }
         
-        old_refresh_token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.old_refresh'
+        # Create client with old refresh token
+        client = app.test_client()
         headers = {'Authorization': f'Bearer {old_refresh_token}'}
         
         # Act: Make refresh request
@@ -975,6 +1082,7 @@ class TestAuthRefresh:
         # Verify new refresh token is different from old one
         new_refresh_token = response_data['refresh_token']
         assert new_refresh_token != old_refresh_token
+        assert new_refresh_token == new_refresh_token_value
         
         # Verify service was called for token rotation
         mock_auth_service.refresh_token.assert_called_once()
@@ -1162,7 +1270,7 @@ class TestAuthEdgeCases:
         })
         assert response.status_code == 400
     
-    def test_register_with_whitespace_in_email(self, client):
+    def test_register_with_whitespace_in_email(self, client, mock_auth_service):
         """
         Test registration with leading/trailing whitespace in email.
         
@@ -1175,7 +1283,16 @@ class TestAuthEdgeCases:
         
         Args:
             client: Flask test client fixture
+            mock_auth_service: Mocked AuthService fixture
         """
+        # Arrange: Configure mock for successful registration (if validation passes)
+        mock_auth_service.register_user.return_value = {
+            'id': 1,
+            'email': 'test@example.com',
+            'first_name': 'Test',
+            'last_name': 'User'
+        }
+        
         # Test emails with whitespace
         emails_with_whitespace = [
             '  test@example.com',       # Leading spaces
