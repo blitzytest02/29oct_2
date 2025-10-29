@@ -314,7 +314,7 @@ class TestStringManipulation:
     def test_string_edge_case_unicode(self):
         """Test handling of unicode characters."""
         unicode_text = "Hello 世界 🌍 Ñoño"
-        assert len(unicode_text) == 14
+        assert len(unicode_text) == 15
         assert "世界" in unicode_text
         assert "🌍" in unicode_text
 
@@ -719,7 +719,7 @@ class TestGeneralHelpers:
     def test_helper_error_handling_invalid_input_type(self):
         """Test error handling for invalid input types."""
         # Test hash with non-string
-        with pytest.raises(AttributeError):
+        with pytest.raises(TypeError):
             hashlib.md5(123)  # Should be bytes or string
 
     def test_helper_error_handling_negative_numbers(self):
