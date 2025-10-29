@@ -791,9 +791,11 @@ class WebSocketTestClient:
         
         try:
             # Simulate WebSocket handshake with GET request
+            # Note: Flask's test client doesn't support real WebSocket protocol upgrades
+            # (Upgrade/Connection headers cause 400 Bad Request). We use a custom header
+            # for testing purposes to simulate WebSocket connections.
             request_headers = headers.copy() if headers else {}
-            request_headers['Upgrade'] = 'websocket'
-            request_headers['Connection'] = 'Upgrade'
+            request_headers['X-WebSocket-Handshake'] = 'mock'
             
             response = self.client.get(
                 path,
