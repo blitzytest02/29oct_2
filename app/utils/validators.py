@@ -13,6 +13,7 @@ All validators follow consistent patterns:
 Designed to support Node.js to Flask migration with functional equivalence.
 """
 
+import html
 import re
 import string
 from datetime import datetime
@@ -642,3 +643,36 @@ def validate_pattern(value: Optional[str], pattern: str) -> bool:
         bool: True if value matches pattern, False otherwise
     """
     return validate_against_pattern(value, pattern)
+
+
+# ==============================================================================
+# XSS PREVENTION
+# ==============================================================================
+
+def sanitize_html(value: Optional[str]) -> Optional[str]:
+    """
+    Sanitize HTML/JavaScript to prevent XSS attacks.
+    
+    Escapes HTML special characters (<, >, &, ", ') to prevent
+    injection of malicious scripts.
+    
+    Args:
+        value: String that may contain HTML/JavaScript
+        
+    Returns:
+        str: Sanitized string with HTML entities escaped, or None if input is None
+        
+    Examples:
+        >>> sanitize_html('<script>alert("XSS")</script>')
+        '&lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt;'
+        >>> sanitize_html('Normal text')
+        'Normal text'
+    """
+    if value is None:
+        return None
+    
+    if not isinstance(value, str):
+        return value
+    
+    # Use html.escape to convert special characters to HTML entities
+    return html.escape(value, quote=True)

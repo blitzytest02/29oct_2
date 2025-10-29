@@ -376,3 +376,21 @@ class User(db.Model):
             return False
         
         return True
+    
+    def delete(self) -> None:
+        """
+        Soft delete the user by setting is_active to False.
+        
+        This method performs a soft delete rather than removing the user record
+        from the database. This preserves data integrity and allows for potential
+        account recovery or audit trails.
+        
+        Example:
+            >>> user = User.query.get(1)
+            >>> user.delete()
+            >>> db.session.commit()
+            >>> user.is_active
+            False
+        """
+        self.is_active = False
+        self.updated_at = datetime.utcnow()

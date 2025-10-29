@@ -324,8 +324,8 @@ def _register_error_handlers(app):
         message = error.description if hasattr(error, 'description') and error.description != 'Bad Request' else 'Bad request. The request data is invalid or malformed.'
         return jsonify({
             'error': {
-                'status': 400,
                 'message': message,
+                'status': 400,
                 'type': 'BadRequest'
             }
         }), 400
@@ -337,8 +337,8 @@ def _register_error_handlers(app):
         message = error.description if hasattr(error, 'description') and error.description != 'Unauthorized' else 'Unauthorized. Authentication is required.'
         return jsonify({
             'error': {
-                'status': 401,
                 'message': message,
+                'status': 401,
                 'type': 'Unauthorized'
             }
         }), 401
@@ -346,10 +346,11 @@ def _register_error_handlers(app):
     @app.errorhandler(403)
     def forbidden_error(error):
         """Handle 403 Forbidden errors."""
+        message = error.description if hasattr(error, 'description') and error.description != 'Forbidden' else 'Forbidden. You do not have permission to access this resource.'
         return jsonify({
             'error': {
+                'message': message,
                 'status': 403,
-                'message': 'Forbidden. You do not have permission to access this resource.',
                 'type': 'Forbidden'
             }
         }), 403
@@ -357,10 +358,11 @@ def _register_error_handlers(app):
     @app.errorhandler(404)
     def not_found_error(error):
         """Handle 404 Not Found errors."""
+        message = error.description if hasattr(error, 'description') and error.description != 'Not Found' else 'Resource not found.'
         return jsonify({
             'error': {
+                'message': message,
                 'status': 404,
-                'message': 'Resource not found.',
                 'type': 'NotFound'
             }
         }), 404
@@ -368,22 +370,36 @@ def _register_error_handlers(app):
     @app.errorhandler(405)
     def method_not_allowed_error(error):
         """Handle 405 Method Not Allowed errors."""
+        message = error.description if hasattr(error, 'description') and error.description != 'Method Not Allowed' else 'Method not allowed for this endpoint.'
         return jsonify({
             'error': {
+                'message': message,
                 'status': 405,
-                'message': 'Method not allowed for this endpoint.',
                 'type': 'MethodNotAllowed'
             }
         }), 405
+    
+    @app.errorhandler(409)
+    def conflict_error(error):
+        """Handle 409 Conflict errors."""
+        message = error.description if hasattr(error, 'description') and error.description != 'Conflict' else 'Conflict. The request conflicts with existing data.'
+        return jsonify({
+            'error': {
+                'message': message,
+                'status': 409,
+                'type': 'Conflict'
+            }
+        }), 409
     
     @app.errorhandler(500)
     def internal_server_error(error):
         """Handle 500 Internal Server Error."""
         logger.error(f"Internal server error: {error}")
+        message = error.description if hasattr(error, 'description') and error.description != 'Internal Server Error' else 'Internal server error. Please try again later.'
         return jsonify({
             'error': {
+                'message': message,
                 'status': 500,
-                'message': 'Internal server error. Please try again later.',
                 'type': 'InternalServerError'
             }
         }), 500
@@ -393,9 +409,9 @@ def _register_error_handlers(app):
         """Handle all Werkzeug HTTP exceptions."""
         return jsonify({
             'error': {
-                'status': error.code,
                 'message': error.description,
-                'type': error.name
+                'status': error.code,
+                'type': error.name or 'HTTPException'
             }
         }), error.code
     
@@ -412,9 +428,9 @@ def _register_error_handlers(app):
         
         return jsonify({
             'error': {
-                'status': 500,
                 'message': error_message,
-                'type': 'UnexpectedError'
+                'status': 500,
+                'type': 'UnexpectedException'
             }
         }), 500
     
