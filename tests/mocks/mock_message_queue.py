@@ -667,7 +667,6 @@ class MockCeleryTask:
                 'state': self.STARTED
             }
             
-            self._task_history.append(deepcopy(task_record))
             self._state = self.STARTED
             
             # Simulate execution with optional delay
@@ -694,9 +693,14 @@ class MockCeleryTask:
                 # No function provided, simulate success
                 self._state = self.SUCCESS
                 self._result = {'status': 'completed'}
+                task_record['state'] = self.SUCCESS
+                task_record['result'] = self._result
             
             self._executed = True
             task_record['completed_at'] = datetime.now().isoformat()
+            
+            # Add to history after execution completes
+            self._task_history.append(deepcopy(task_record))
             
             return self
     
