@@ -242,7 +242,7 @@ def validate_created_response(
     expected_location: Optional[str] = None,
     location_pattern: Optional[str] = None
 ) -> Dict[str, Any]:
-    """
+    r"""
     Validates 201 Created response with Location header.
     
     Args:

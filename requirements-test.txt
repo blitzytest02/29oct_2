@@ -53,6 +53,15 @@ pytest-asyncio==0.23.8
 coverage==7.6.1
 
 # ============================================================================
+# JSON Schema Validation
+# ============================================================================
+
+# jsonschema 4.23.0 - JSON Schema validation library
+# Provides JSON Schema validation capabilities for validating API response
+# structures against schemas, ensuring responses conform to expected formats
+jsonschema==4.23.0
+
+# ============================================================================
 # HTTP Mocking Libraries
 # ============================================================================
 
