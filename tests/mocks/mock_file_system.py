@@ -707,9 +707,11 @@ def validate_filename(
         return False
     
     # Define dangerous characters
-    dangerous_chars = r'[<>:"|?*\x00-\x1f]'
+    # Always reject backslashes (Windows path separator)
+    dangerous_chars = r'[<>:"|?*\\\x00-\x1f]'
     if not allow_path_chars:
-        dangerous_chars = r'[<>:"|?*\\/\x00-\x1f]'
+        # Also reject forward slashes when path chars not allowed
+        dangerous_chars = r'[<>:"|?*/\\\x00-\x1f]'
     
     if re.search(dangerous_chars, filename):
         return False
