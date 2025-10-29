@@ -404,7 +404,7 @@ def test_error_status_is_integer(client):
 
 
 @pytest.mark.unit
-def test_validation_error_handler(client):
+def test_validation_error_handler(authenticated_client):
     """
     Test custom ValidationError exception handler.
     
@@ -421,7 +421,7 @@ def test_validation_error_handler(client):
     being defined in the application.
     """
     # Send invalid data to trigger validation error
-    response = client.post(
+    response = authenticated_client.post(
         '/api/users',
         json={'email': 'invalid-email'},  # Invalid email format
         content_type='application/json'
@@ -478,7 +478,7 @@ def test_authorization_error_handler(client):
 
 
 @pytest.mark.unit
-def test_resource_not_found_error_handler(client):
+def test_resource_not_found_error_handler(authenticated_client):
     """
     Test custom ResourceNotFoundError handler.
     
@@ -492,7 +492,7 @@ def test_resource_not_found_error_handler(client):
         - Error message specific to missing resource
         - Resource type included in error message
     """
-    response = client.get('/api/users/999999')
+    response = authenticated_client.get('/api/users/999999')
     
     assert response.status_code == 404
     assert response.content_type == 'application/json'
