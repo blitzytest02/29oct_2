@@ -14,8 +14,9 @@ marker that enables:
 3. Relative imports between utility test modules if needed
 4. Future extension with shared utility test fixtures
 
-This supports the Flask migration testing objective (Agent Action Plan Section 0.1)
-of ensuring functional equivalence during Node.js to Python/Flask migration.
+This supports the Flask migration testing objective (Agent Action Plan
+Section 0.1) of ensuring functional equivalence during Node.js to
+Python/Flask migration.
 
 Test Organization:
 - Unit tests focus on isolated utility functions
@@ -26,10 +27,10 @@ Test Organization:
 Usage:
     Run all utility tests:
         $ pytest tests/unit/utils/
-    
+
     Run specific utility test module:
         $ pytest tests/unit/utils/test_validators.py
-    
+
     Run with coverage:
         $ pytest --cov=app.utils tests/unit/utils/
 """
