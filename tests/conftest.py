@@ -215,31 +215,29 @@ def db_session(app):
     from app.extensions import db
     from tests.factories.base_factory import BaseFactory
     
-    # Ensure we're within application context
-    # create_all() requires application context to access database URI
-    with app.app_context():
-        # Create all database tables defined in models
-        # This includes all tables from SQLAlchemy models with __tablename__
-        db.create_all()
-        
-        # Configure factory_boy factories to use this database session
-        # This allows UserFactory and other factories to work seamlessly in tests
-        BaseFactory.set_session(db.session)
-        
-        # Yield the database session for test usage
-        # Tests can now use db.session to interact with the database
-        yield db.session
-        
-        # Teardown: Rollback any uncommitted transactions
-        # This ensures no test changes persist and maintains test isolation
-        db.session.rollback()
-        
-        # Cleanup: Drop all database tables
-        # This provides a completely clean slate for the next test
-        db.drop_all()
-        
-        # Cleanup: Clear factory session to prevent stale references
-        BaseFactory.set_session(None)
+    # Note: app fixture already provides app context, no need to create another
+    # Create all database tables defined in models
+    # This includes all tables from SQLAlchemy models with __tablename__
+    db.create_all()
+    
+    # Configure factory_boy factories to use this database session
+    # This allows UserFactory and other factories to work seamlessly in tests
+    BaseFactory.set_session(db.session)
+    
+    # Yield the database session for test usage
+    # Tests can now use db.session to interact with the database
+    yield db.session
+    
+    # Teardown: Rollback any uncommitted transactions
+    # This ensures no test changes persist and maintains test isolation
+    db.session.rollback()
+    
+    # Cleanup: Drop all database tables
+    # This provides a completely clean slate for the next test
+    db.drop_all()
+    
+    # Cleanup: Clear factory session to prevent stale references
+    BaseFactory.set_session(None)
 
 
 
