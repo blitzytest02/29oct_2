@@ -186,6 +186,15 @@ def _initialize_extensions(app):
     from app.extensions import db, migrate, cors, jwt
     
     try:
+        # Ensure DATABASE_URI is set before initializing SQLAlchemy
+        # If None or empty, provide a safe fallback for testing/development
+        if not app.config.get('SQLALCHEMY_DATABASE_URI'):
+            logger.warning(
+                "SQLALCHEMY_DATABASE_URI not set. Using default SQLite database. "
+                "Set DATABASE_URL environment variable for production."
+            )
+            app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///default.db'
+        
         # Initialize SQLAlchemy database ORM
         db.init_app(app)
         logger.debug("Initialized SQLAlchemy database extension")
