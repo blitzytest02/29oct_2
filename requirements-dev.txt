@@ -1,0 +1,12 @@
+# Development Dependencies
+# Includes all testing dependencies plus development tools
+
+# Include all testing dependencies
+-r requirements-test.txt
+
+# Code Quality and Formatting Tools
+black==24.8.0
+flake8==7.1.1
+mypy==1.11.2
+isort==5.13.2
+pre-commit==3.8.0

@@ -1,0 +1,31 @@
+# Coverage Configuration for Flask Testing
+# Generated for Node.js to Flask migration project
+
+[run]
+source = app
+branch = True
+omit =
+    */tests/*
+    */venv/*
+    */__pycache__/*
+    */migrations/*
+    */config.py
+
+[report]
+precision = 2
+show_missing = True
+skip_covered = False
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
+
+[html]
+directory = htmlcov
+
+[xml]
+output = coverage.xml
