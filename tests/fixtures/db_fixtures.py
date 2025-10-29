@@ -47,6 +47,8 @@ Design principles:
 import pytest
 from app.extensions import db
 
+__all__ = ['db_session', 'db_transaction', 'clean_database', 'database_engine']
+
 
 @pytest.fixture(scope='function')
 def db_session(app):
