@@ -55,6 +55,7 @@ from datetime import datetime
 
 import factory
 from factory import Faker, LazyAttribute, Sequence, Trait, post_generation
+from werkzeug.security import generate_password_hash
 
 from tests.factories.base_factory import BaseFactory
 from app.models.user import User
@@ -129,15 +130,20 @@ class UserFactory(BaseFactory):
     role = 'user'
     is_active = True
     
+    # Password hash field - set directly to avoid post_generation issues with NOT NULL constraint
+    # Default password is 'DefaultPassword123!' hashed using Werkzeug
+    password_hash = LazyAttribute(lambda obj: generate_password_hash('DefaultPassword123!'))
+    
     # Timestamps are auto-managed by SQLAlchemy (created_at, updated_at)
     # No need to set them explicitly
     
     @post_generation
     def password(self, create, extracted, **kwargs):
-        """Post-generation hook for setting user password securely.
+        """Post-generation hook for setting custom user password if provided.
         
-        This hook is called after the User instance is created to set the password
-        using the User model's set_password() method, which handles secure hashing.
+        This hook allows setting a custom password after the User instance is created.
+        If a password is provided during factory call, it will override the default
+        password_hash that was set in the LazyAttribute above.
         
         Args:
             create (bool): Whether the instance is being created (True) or built (False)
@@ -145,10 +151,9 @@ class UserFactory(BaseFactory):
             **kwargs: Additional keyword arguments
         
         Behavior:
-            - If password is provided during factory call, uses that password
-            - Otherwise, uses default password 'DefaultPassword123!'
-            - Calls User.set_password() to properly hash the password
-            - Works for both create() and build() operations
+            - If password is provided during factory call, replaces the password_hash
+            - Otherwise, keeps the default hashed password
+            - Only updates if create=True (for build(), password_hash is already set)
         
         Examples:
             >>> # Uses default password
@@ -159,11 +164,15 @@ class UserFactory(BaseFactory):
             >>> user = UserFactory(password='CustomPass456!')
             >>> assert user.check_password('CustomPass456!')
         """
-        # Use provided password or default
-        plain_password = extracted if extracted else 'DefaultPassword123!'
-        
-        # Set password using User model's secure hashing method
-        self.set_password(plain_password)
+        # Only update password if a custom one was provided
+        if extracted:
+            # Use User model's set_password method for secure hashing
+            self.set_password(extracted)
+            # For created objects, update the database
+            if create:
+                from app.extensions import db
+                db.session.add(self)
+                db.session.commit()
     
     class Params:
         """Factory traits for specialized user types.
