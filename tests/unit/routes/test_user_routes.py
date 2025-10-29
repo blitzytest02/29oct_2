@@ -70,7 +70,7 @@ def mock_user_service(mocker):
     Example:
         def test_list_users(client, mock_user_service):
             mock_user_service.list_users.return_value = {'users': [], 'total': 0}
-            response = client.get('/api/users')
+            response = authenticated_client.get('/api/users')
             assert response.status_code == 200
     """
     # Create a mock UserService class
@@ -144,6 +144,9 @@ def sample_user_response():
     }
 
 
+
+
+
 # ============================================================================
 # TEST CLASS: TestUserList
 # ============================================================================
@@ -162,7 +165,7 @@ class TestUserList:
     - Authentication requirements
     """
     
-    def test_list_users_success(self, client, mock_user_service, sample_user_response):
+    def test_list_users_success(self, authenticated_client, mock_user_service, sample_user_response):
         """
         Test successful user list retrieval with default pagination.
         
@@ -183,7 +186,7 @@ class TestUserList:
         }
         
         # Act: Make GET request to list users
-        response = client.get('/api/users')
+        response = authenticated_client.get('/api/users')
         
         # Assert: Verify response structure and status code
         assert response.status_code == 200
@@ -205,7 +208,7 @@ class TestUserList:
         # Assert: Verify service was called correctly
         mock_user_service.list_users.assert_called_once()
     
-    def test_list_users_with_pagination(self, client, mock_user_service):
+    def test_list_users_with_pagination(self, authenticated_client, mock_user_service):
         """
         Test user list with custom pagination parameters.
         
@@ -224,7 +227,7 @@ class TestUserList:
         }
         
         # Act: Make GET request with pagination parameters
-        response = client.get('/api/users?page=2&limit=20')
+        response = authenticated_client.get('/api/users?page=2&limit=20')
         
         # Assert: Verify response status and pagination
         assert response.status_code == 200
@@ -238,7 +241,7 @@ class TestUserList:
         # Assert: Verify service was called with correct pagination
         mock_user_service.list_users.assert_called_once_with(page=2, limit=20)
     
-    def test_list_users_with_empty_result(self, client, mock_user_service):
+    def test_list_users_with_empty_result(self, authenticated_client, mock_user_service):
         """
         Test user list when no users exist in the database.
         
@@ -257,7 +260,7 @@ class TestUserList:
         }
         
         # Act: Make GET request to list users
-        response = client.get('/api/users')
+        response = authenticated_client.get('/api/users')
         
         # Assert: Verify successful response with empty list
         assert response.status_code == 200
@@ -287,7 +290,9 @@ class TestUserList:
         assert response.status_code == 401
         
         data = json.loads(response.data)
-        assert 'error' in data or 'message' in data
+        # JWT authentication errors return {'msg': ...}
+        assert 'msg' in data  # Flask-JWT-Extended returns 'msg' key
+        assert 'Authorization Header' in data['msg']
         
         # Assert: Verify service was not called
         mock_user_service.list_users.assert_not_called()
@@ -312,7 +317,7 @@ class TestCreateUser:
     - Authentication requirements
     """
     
-    def test_create_user_with_valid_data(self, client, mock_user_service, sample_user_data, sample_user_response):
+    def test_create_user_with_valid_data(self, authenticated_client, mock_user_service, sample_user_data, sample_user_response):
         """
         Test successful user creation with valid data.
         
@@ -327,7 +332,7 @@ class TestCreateUser:
         mock_user_service.create_user.return_value = sample_user_response
         
         # Act: Make POST request to create user
-        response = client.post(
+        response = authenticated_client.post(
             '/api/users',
             data=json.dumps(sample_user_data),
             content_type='application/json'
@@ -351,7 +356,7 @@ class TestCreateUser:
         call_args = mock_user_service.create_user.call_args[0][0]
         assert call_args['email'] == sample_user_data['email']
     
-    def test_create_user_with_duplicate_email(self, client, mock_user_service, sample_user_data):
+    def test_create_user_with_duplicate_email(self, authenticated_client, mock_user_service, sample_user_data):
         """
         Test user creation with email that already exists.
         
@@ -364,7 +369,7 @@ class TestCreateUser:
         mock_user_service.create_user.side_effect = ValueError('Email already exists')
         
         # Act: Make POST request with duplicate email
-        response = client.post(
+        response = authenticated_client.post(
             '/api/users',
             data=json.dumps(sample_user_data),
             content_type='application/json'
@@ -374,10 +379,13 @@ class TestCreateUser:
         assert response.status_code == 409
         
         data = json.loads(response.data)
-        assert 'error' in data or 'message' in data
-        assert 'email' in data.get('error', '').lower() or 'email' in data.get('message', '').lower()
+        # Application errors return {'error': {'message': ..., 'status': ..., 'type': ...}}
+        assert 'error' in data
+        assert 'message' in data['error']
+        error_msg = data['error']['message']
+        assert 'email' in error_msg.lower() or 'already exists' in error_msg.lower()
     
-    def test_create_user_with_invalid_email(self, client, mock_user_service, sample_user_data):
+    def test_create_user_with_invalid_email(self, authenticated_client, mock_user_service, sample_user_data):
         """
         Test user creation with invalid email format.
         
@@ -391,7 +399,7 @@ class TestCreateUser:
         invalid_data['email'] = 'invalid-email-format'
         
         # Act: Make POST request with invalid email
-        response = client.post(
+        response = authenticated_client.post(
             '/api/users',
             data=json.dumps(invalid_data),
             content_type='application/json'
@@ -401,9 +409,11 @@ class TestCreateUser:
         assert response.status_code == 400
         
         data = json.loads(response.data)
-        assert 'error' in data or 'message' in data or 'errors' in data
+        # Application errors return {'error': {'message': ..., 'status': ..., 'type': ...}}
+        assert 'error' in data
+        assert 'message' in data['error']
     
-    def test_create_user_with_missing_required_fields(self, client, mock_user_service):
+    def test_create_user_with_missing_required_fields(self, authenticated_client, mock_user_service):
         """
         Test user creation with missing required fields.
         
@@ -419,7 +429,7 @@ class TestCreateUser:
         }
         
         # Act: Make POST request with incomplete data
-        response = client.post(
+        response = authenticated_client.post(
             '/api/users',
             data=json.dumps(incomplete_data),
             content_type='application/json'
@@ -429,7 +439,9 @@ class TestCreateUser:
         assert response.status_code == 400
         
         data = json.loads(response.data)
-        assert 'error' in data or 'message' in data or 'errors' in data
+        # Application errors return {'error': {'message': ..., 'status': ..., 'type': ...}}
+        assert 'error' in data
+        assert 'message' in data['error']
     
     def test_create_user_unauthorized(self, client, mock_user_service, sample_user_data):
         """
@@ -453,7 +465,9 @@ class TestCreateUser:
         assert response.status_code == 401
         
         data = json.loads(response.data)
-        assert 'error' in data or 'message' in data
+        # JWT authentication errors return {'msg': ...}
+        assert 'msg' in data  # Flask-JWT-Extended returns 'msg' key
+        assert 'Authorization Header' in data['msg']
         
         # Assert: Verify service was not called
         mock_user_service.create_user.assert_not_called()
@@ -476,7 +490,7 @@ class TestGetUser:
     - Authentication requirements
     """
     
-    def test_get_user_by_id_existing(self, client, mock_user_service, sample_user_response):
+    def test_get_user_by_id_existing(self, authenticated_client, mock_user_service, sample_user_response):
         """
         Test successful retrieval of existing user by ID.
         
@@ -490,7 +504,7 @@ class TestGetUser:
         mock_user_service.get_user.return_value = sample_user_response
         
         # Act: Make GET request for specific user
-        response = client.get('/api/users/1')
+        response = authenticated_client.get('/api/users/1')
         
         # Assert: Verify successful response
         assert response.status_code == 200
@@ -505,7 +519,7 @@ class TestGetUser:
         # Assert: Verify service was called with correct ID
         mock_user_service.get_user.assert_called_once_with(1)
     
-    def test_get_user_by_id_nonexistent(self, client, mock_user_service):
+    def test_get_user_by_id_nonexistent(self, authenticated_client, mock_user_service):
         """
         Test retrieval of nonexistent user by ID.
         
@@ -518,13 +532,15 @@ class TestGetUser:
         mock_user_service.get_user.return_value = None
         
         # Act: Make GET request for nonexistent user
-        response = client.get('/api/users/999')
+        response = authenticated_client.get('/api/users/999')
         
         # Assert: Verify not found response
         assert response.status_code == 404
         
         data = json.loads(response.data)
-        assert 'error' in data or 'message' in data
+        # Application errors return {'error': {'message': ..., 'status': ..., 'type': ...}}
+        assert 'error' in data
+        assert 'message' in data['error']
         
         # Assert: Verify service was called with correct ID
         mock_user_service.get_user.assert_called_once_with(999)
@@ -547,7 +563,9 @@ class TestGetUser:
         assert response.status_code == 401
         
         data = json.loads(response.data)
-        assert 'error' in data or 'message' in data
+        # JWT authentication errors return {'msg': ...}
+        assert 'msg' in data  # Flask-JWT-Extended returns 'msg' key
+        assert 'Authorization Header' in data['msg']
         
         # Assert: Verify service was not called
         mock_user_service.get_user.assert_not_called()
@@ -571,7 +589,7 @@ class TestUpdateUser:
     - Authorization (cannot update other users)
     """
     
-    def test_update_user_with_valid_changes(self, client, mock_user_service, sample_user_response):
+    def test_update_user_with_valid_changes(self, authenticated_client, mock_user_service, sample_user_response):
         """
         Test successful user update with valid data.
         
@@ -589,7 +607,7 @@ class TestUpdateUser:
         update_data = {'first_name': 'Updated'}
         
         # Act: Make PUT request to update user
-        response = client.put(
+        response = authenticated_client.put(
             '/api/users/1',
             data=json.dumps(update_data),
             content_type='application/json'
@@ -606,7 +624,7 @@ class TestUpdateUser:
         # Assert: Verify service was called with correct parameters
         mock_user_service.update_user.assert_called_once_with(1, update_data)
     
-    def test_update_user_nonexistent(self, client, mock_user_service):
+    def test_update_user_nonexistent(self, authenticated_client, mock_user_service):
         """
         Test update of nonexistent user.
         
@@ -620,7 +638,7 @@ class TestUpdateUser:
         update_data = {'first_name': 'Updated'}
         
         # Act: Make PUT request for nonexistent user
-        response = client.put(
+        response = authenticated_client.put(
             '/api/users/999',
             data=json.dumps(update_data),
             content_type='application/json'
@@ -630,7 +648,9 @@ class TestUpdateUser:
         assert response.status_code == 404
         
         data = json.loads(response.data)
-        assert 'error' in data or 'message' in data
+        # Application errors return {'error': {'message': ..., 'status': ..., 'type': ...}}
+        assert 'error' in data
+        assert 'message' in data['error']
     
     def test_update_user_unauthorized(self, client, mock_user_service):
         """
@@ -655,12 +675,14 @@ class TestUpdateUser:
         assert response.status_code == 401
         
         data = json.loads(response.data)
-        assert 'error' in data or 'message' in data
+        # JWT authentication errors return {'msg': ...}
+        assert 'msg' in data  # Flask-JWT-Extended returns 'msg' key
+        assert 'Authorization Header' in data['msg']
         
         # Assert: Verify service was not called
         mock_user_service.update_user.assert_not_called()
     
-    def test_update_user_forbidden(self, client, mock_user_service):
+    def test_update_user_forbidden(self, authenticated_client, mock_user_service):
         """
         Test user update when authenticated user tries to update another user.
         
@@ -675,7 +697,7 @@ class TestUpdateUser:
         update_data = {'first_name': 'Updated'}
         
         # Act: Make PUT request to update another user
-        response = client.put(
+        response = authenticated_client.put(
             '/api/users/2',
             data=json.dumps(update_data),
             content_type='application/json'
@@ -685,7 +707,9 @@ class TestUpdateUser:
         assert response.status_code == 403
         
         data = json.loads(response.data)
-        assert 'error' in data or 'message' in data
+        # Application errors return {'error': {'message': ..., 'status': ..., 'type': ...}}
+        assert 'error' in data
+        assert 'message' in data['error']
 
 
 # ============================================================================
@@ -705,7 +729,7 @@ class TestDeleteUser:
     - Authentication requirements
     """
     
-    def test_delete_user_existing(self, client, mock_user_service):
+    def test_delete_user_existing(self, authenticated_client, mock_user_service):
         """
         Test successful deletion of existing user.
         
@@ -718,7 +742,7 @@ class TestDeleteUser:
         mock_user_service.delete_user.return_value = True
         
         # Act: Make DELETE request
-        response = client.delete('/api/users/1')
+        response = authenticated_client.delete('/api/users/1')
         
         # Assert: Verify no content response
         assert response.status_code == 204
@@ -727,7 +751,7 @@ class TestDeleteUser:
         # Assert: Verify service was called with correct ID
         mock_user_service.delete_user.assert_called_once_with(1)
     
-    def test_delete_user_nonexistent(self, client, mock_user_service):
+    def test_delete_user_nonexistent(self, authenticated_client, mock_user_service):
         """
         Test deletion of nonexistent user.
         
@@ -739,13 +763,15 @@ class TestDeleteUser:
         mock_user_service.delete_user.return_value = False
         
         # Act: Make DELETE request for nonexistent user
-        response = client.delete('/api/users/999')
+        response = authenticated_client.delete('/api/users/999')
         
         # Assert: Verify not found response
         assert response.status_code == 404
         
         data = json.loads(response.data)
-        assert 'error' in data or 'message' in data
+        # Application errors return {'error': {'message': ..., 'status': ..., 'type': ...}}
+        assert 'error' in data
+        assert 'message' in data['error']
     
     def test_delete_user_unauthorized(self, client, mock_user_service):
         """
@@ -765,7 +791,9 @@ class TestDeleteUser:
         assert response.status_code == 401
         
         data = json.loads(response.data)
-        assert 'error' in data or 'message' in data
+        # JWT authentication errors return {'msg': ...}
+        assert 'msg' in data  # Flask-JWT-Extended returns 'msg' key
+        assert 'Authorization Header' in data['msg']
         
         # Assert: Verify service was not called
         mock_user_service.delete_user.assert_not_called()
