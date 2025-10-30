@@ -232,6 +232,14 @@ def db_session(app):
     # This ensures no test changes persist and maintains test isolation
     db.session.rollback()
     
+    # Clear the session's identity map to prevent DetachedInstanceError
+    # This is critical for test isolation when running full test suite
+    db.session.expunge_all()
+    
+    # Remove session to fully clean up scoped_session
+    # This prevents stale objects from persisting across tests
+    db.session.remove()
+    
     # Cleanup: Drop all database tables
     # This provides a completely clean slate for the next test
     db.drop_all()
