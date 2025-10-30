@@ -47,6 +47,20 @@ from dotenv import load_dotenv
 load_dotenv('.env.test')
 
 
+# Import fixture modules to make them available to pytest
+# This enables fixture discovery from dedicated fixture modules
+from tests.fixtures.user_fixtures import (
+    valid_user_data,
+    user_with_minimum_fields,
+    user_with_maximum_length_strings,
+    invalid_user_data,
+    existing_user,
+    admin_user,
+    multiple_users,
+    user_factory
+)
+
+
 # Configure pytest markers for test categorization
 # These markers allow running specific test subsets and provide metadata
 def pytest_configure(config):
