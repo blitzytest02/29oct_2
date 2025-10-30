@@ -207,14 +207,14 @@ def user_with_maximum_length_strings() -> Dict[str, Any]:
     
     # Generate maximum length password (128 chars) with all requirements
     # Must include upper, lower, digit, special for validation
-    max_password = 'A' + 'a' * 100 + '1' * 20 + '!' * 6  # 128 chars total
+    max_password = 'A' + 'a' * 100 + '1' * 20 + '!' * 7  # 128 chars total
     
     return {
         'email': max_email,
         'password': max_password,
         'first_name': 'F' * 100,  # Maximum first_name length
         'last_name': 'L' * 100,   # Maximum last_name length
-        'profile_picture': 'https://example.com/' + 'p' * 476  # 500 chars total URL
+        'profile_picture': 'https://example.com/' + 'p' * 480  # 500 chars total URL
     }
 
 
