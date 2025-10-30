@@ -66,6 +66,8 @@ from app.extensions import db
 from tests.fixtures.user_fixtures import user_factory
 
 
+@pytest.mark.unit
+@pytest.mark.database
 class TestUserCreation:
     """Test suite for User model creation and database persistence."""
     
@@ -297,6 +299,8 @@ class TestUserCreation:
         assert inactive_user.is_active is False
 
 
+@pytest.mark.unit
+@pytest.mark.database
 class TestUserConstraints:
     """Test suite for User model database constraints."""
     
@@ -374,6 +378,8 @@ class TestUserConstraints:
             db_session.commit()
 
 
+@pytest.mark.unit
+@pytest.mark.database
 class TestPasswordHashing:
     """Test suite for password hashing and verification functionality."""
     
@@ -473,6 +479,7 @@ class TestPasswordHashing:
         assert user2.check_password(same_password) is True
 
 
+@pytest.mark.unit
 class TestEmailValidation:
     """Test suite for email validation static method."""
     
@@ -561,6 +568,7 @@ class TestEmailValidation:
         assert User.validate_email('user@domain.co') is True  # 2-char TLD valid
 
 
+@pytest.mark.unit
 class TestPasswordStrengthValidation:
     """Test suite for password strength validation static method."""
     
@@ -683,6 +691,8 @@ class TestPasswordStrengthValidation:
                 f"Expected password with '{char}' to be valid"
 
 
+@pytest.mark.unit
+@pytest.mark.database
 class TestUserSerialization:
     """Test suite for User model serialization to dictionary."""
     
@@ -801,6 +811,8 @@ class TestUserSerialization:
         assert isinstance(updated_dt, datetime)
 
 
+@pytest.mark.unit
+@pytest.mark.database
 class TestUserRepresentation:
     """Test suite for User model string representation."""
     
@@ -830,6 +842,8 @@ class TestUserRepresentation:
         assert 'test@example.com' in repr_string
 
 
+@pytest.mark.unit
+@pytest.mark.database
 class TestUserEdgeCases:
     """Test suite for User model edge cases and boundary conditions."""
     
@@ -942,6 +956,8 @@ class TestUserEdgeCases:
         assert user.updated_at >= original_updated_at
 
 
+@pytest.mark.unit
+@pytest.mark.database
 class TestUserSoftDelete:
     """Test suite for User model soft delete functionality."""
     
@@ -1080,6 +1096,8 @@ class TestUserSoftDelete:
         assert reactivated_user.is_active is True
 
 
+@pytest.mark.unit
+@pytest.mark.database
 class TestUserFactory:
     """Test suite for user_factory fixture usage.
     
@@ -1160,6 +1178,8 @@ class TestUserFactory:
         assert user.check_password('WrongPassword') is False
 
 
+@pytest.mark.unit
+@pytest.mark.database
 class TestUserQueryOperations:
     """Test suite for common User query operations."""
     
