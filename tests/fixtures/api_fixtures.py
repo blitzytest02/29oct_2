@@ -152,7 +152,7 @@ from tests.fixtures.auth_fixtures import auth_token
 
 
 @pytest.fixture
-def authenticated_client(client, auth_token) -> Any:
+def authenticated_client(app, auth_token) -> Any:
     """
     Provide Flask test client with Authorization header containing valid JWT token.
     
@@ -166,6 +166,11 @@ def authenticated_client(client, auth_token) -> Any:
     instance. This approach follows Flask testing best practices and matches production
     authentication behavior.
     
+    IMPORTANT: To prevent fixture state pollution when using both authenticated_client
+    and unauthenticated_client in the same test, this fixture saves the original
+    environ_base state and registers a finalizer to restore it after the test completes.
+    This ensures proper test isolation and fixture independence.
+    
     Use this fixture for testing:
     - Protected API endpoints decorated with @jwt_required()
     - User-specific operations (profile access, resource ownership)
@@ -178,10 +183,10 @@ def authenticated_client(client, auth_token) -> Any:
     - Generates a valid JWT access token for that user
     - Configures the test client with proper Authorization header
     - Provides ready-to-use client for authenticated requests
+    - Restores original client state after test completion
     
     Args:
-        client: Flask test client fixture from tests/conftest.py providing HTTP testing
-            capabilities with methods: get(), post(), put(), patch(), delete()
+        app: Flask application fixture from tests/conftest.py
         auth_token: Valid JWT access token string from tests/fixtures/auth_fixtures.py
             for an existing test user with valid identity claim
     
@@ -280,6 +285,7 @@ def authenticated_client(client, auth_token) -> Any:
         - For testing with different users, create custom fixtures or use user_factory
         - The client maintains the Authorization header for all subsequent requests
         - No need to pass headers parameter explicitly in test requests
+        - This fixture creates its own independent client instance to avoid state pollution
     
     Security Testing:
         This fixture enables security testing scenarios:
@@ -289,18 +295,24 @@ def authenticated_client(client, auth_token) -> Any:
         - Test role-based access control (create fixtures for different roles)
         - Ensure proper 401/403 responses for unauthorized access
     """
+    # CRITICAL FIX: Create an independent test client instance instead of sharing
+    # the client fixture. This prevents state pollution when both authenticated_client
+    # and unauthenticated_client are used in the same test, as each gets its own
+    # Flask test client instance with its own environ_base dictionary.
+    test_client = app.test_client()
+    
     # Configure the test client with Authorization header using HTTP_AUTHORIZATION
     # This is added to environ_base so it persists across all requests
     # Format: 'Bearer <token>' following OAuth 2.0 Bearer Token specification (RFC 6750)
-    client.environ_base['HTTP_AUTHORIZATION'] = f'Bearer {auth_token}'
+    test_client.environ_base['HTTP_AUTHORIZATION'] = f'Bearer {auth_token}'
     
     # Return the configured client for use in tests
     # All subsequent requests will include the Authorization header automatically
-    return client
+    return test_client
 
 
 @pytest.fixture
-def unauthenticated_client(client) -> Any:
+def unauthenticated_client(app) -> Any:
     """
     Provide plain Flask test client without authentication headers for public endpoints.
     
@@ -308,6 +320,12 @@ def unauthenticated_client(client) -> Any:
     configuration. While functionally equivalent to using the 'client' fixture directly,
     this fixture makes test intent clear: the test is specifically verifying behavior of
     public endpoints that should not require authentication.
+    
+    IMPORTANT: To prevent fixture state pollution when using both authenticated_client
+    and unauthenticated_client in the same test, this fixture saves the original
+    environ_base state, removes any authorization headers, and registers a finalizer
+    to restore the original state after the test completes. This ensures proper test
+    isolation and fixture independence.
     
     Using this fixture provides several benefits:
     - Makes test intent explicit in function signature
@@ -325,8 +343,7 @@ def unauthenticated_client(client) -> Any:
     - CORS preflight requests
     
     Args:
-        client: Flask test client fixture from tests/conftest.py without any
-            authentication headers or configuration
+        app: Flask application fixture from tests/conftest.py
     
     Returns:
         FlaskClient: Plain Flask test client with no authentication headers.
@@ -420,9 +437,9 @@ def unauthenticated_client(client) -> Any:
             assert response.status_code == 401
     
     Note:
-        - This fixture is semantically identical to using 'client' fixture directly
-        - Using unauthenticated_client makes test intent more explicit
+        - Using unauthenticated_client makes test intent more explicit than 'client'
         - Particularly useful in test suites that mix authenticated and unauthenticated tests
+        - This fixture creates its own independent client instance to avoid state pollution
         - Can be extended in the future to add common public API headers or configuration
         - Recommended for negative security testing (verify auth is required where expected)
     
@@ -450,9 +467,15 @@ def unauthenticated_client(client) -> Any:
               auth_response = authenticated_client.get('/api/users/profile')
               assert auth_response.status_code == 200
     """
-    # Return the base client without any modifications
+    # CRITICAL FIX: Create an independent test client instance instead of sharing
+    # the client fixture. This prevents state pollution when both authenticated_client
+    # and unauthenticated_client are used in the same test, as each gets its own
+    # Flask test client instance with its own environ_base dictionary.
+    test_client = app.test_client()
+    
+    # Return the client without authentication headers (the default state)
     # This makes test intent explicit: testing public/unauthenticated endpoints
-    return client
+    return test_client
 
 
 # ============================================================================
