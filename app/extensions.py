@@ -43,7 +43,9 @@ from flask_jwt_extended import JWTManager
 # Provides database session management and ORM functionality
 # Members: create_all(), drop_all(), session, session.commit(), session.rollback(),
 #          session.add(), session.delete(), session.query(), init_app()
-db = SQLAlchemy()
+# session_options configures the session to not expire objects on commit
+# which prevents DetachedInstanceError in tests after committing objects
+db = SQLAlchemy(session_options={"expire_on_commit": False})
 
 
 # Flask-Migrate database migration manager

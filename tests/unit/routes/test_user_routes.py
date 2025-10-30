@@ -290,9 +290,10 @@ class TestUserList:
         assert response.status_code == 401
         
         data = json.loads(response.data)
-        # JWT authentication errors return {'msg': ...}
-        assert 'msg' in data  # Flask-JWT-Extended returns 'msg' key
-        assert 'Authorization Header' in data['msg']
+        # JWT authentication errors return nested error object
+        assert 'error' in data
+        assert 'message' in data['error']
+        assert 'authorization' in data['error']['message'].lower() or 'authentication' in data['error']['message'].lower()
         
         # Assert: Verify service was not called
         mock_user_service.list_users.assert_not_called()
@@ -465,9 +466,10 @@ class TestCreateUser:
         assert response.status_code == 401
         
         data = json.loads(response.data)
-        # JWT authentication errors return {'msg': ...}
-        assert 'msg' in data  # Flask-JWT-Extended returns 'msg' key
-        assert 'Authorization Header' in data['msg']
+        # JWT authentication errors return nested error object
+        assert 'error' in data
+        assert 'message' in data['error']
+        assert 'authorization' in data['error']['message'].lower() or 'authentication' in data['error']['message'].lower()
         
         # Assert: Verify service was not called
         mock_user_service.create_user.assert_not_called()
@@ -563,9 +565,10 @@ class TestGetUser:
         assert response.status_code == 401
         
         data = json.loads(response.data)
-        # JWT authentication errors return {'msg': ...}
-        assert 'msg' in data  # Flask-JWT-Extended returns 'msg' key
-        assert 'Authorization Header' in data['msg']
+        # JWT authentication errors return nested error object
+        assert 'error' in data
+        assert 'message' in data['error']
+        assert 'authorization' in data['error']['message'].lower() or 'authentication' in data['error']['message'].lower()
         
         # Assert: Verify service was not called
         mock_user_service.get_user.assert_not_called()
@@ -675,9 +678,10 @@ class TestUpdateUser:
         assert response.status_code == 401
         
         data = json.loads(response.data)
-        # JWT authentication errors return {'msg': ...}
-        assert 'msg' in data  # Flask-JWT-Extended returns 'msg' key
-        assert 'Authorization Header' in data['msg']
+        # JWT authentication errors return nested error object
+        assert 'error' in data
+        assert 'message' in data['error']
+        assert 'authorization' in data['error']['message'].lower() or 'authentication' in data['error']['message'].lower()
         
         # Assert: Verify service was not called
         mock_user_service.update_user.assert_not_called()
@@ -791,9 +795,10 @@ class TestDeleteUser:
         assert response.status_code == 401
         
         data = json.loads(response.data)
-        # JWT authentication errors return {'msg': ...}
-        assert 'msg' in data  # Flask-JWT-Extended returns 'msg' key
-        assert 'Authorization Header' in data['msg']
+        # JWT authentication errors return nested error object
+        assert 'error' in data
+        assert 'message' in data['error']
+        assert 'authorization' in data['error']['message'].lower() or 'authentication' in data['error']['message'].lower()
         
         # Assert: Verify service was not called
         mock_user_service.delete_user.assert_not_called()

@@ -55,18 +55,6 @@ Usage:
 import pytest
 from app.models import User
 
-# Monkey-patch User model to add is_deleted property for compatibility with auth_service.py
-# This is a workaround for an out-of-scope issue where auth_service.py checks user.is_deleted
-# but the User model doesn't have this attribute defined
-if not hasattr(User, 'is_deleted'):
-    # Add is_deleted property that always returns False (users are not deleted by default)
-    User.is_deleted = property(lambda self: getattr(self, '_is_deleted', False))
-    
-    # Add setter for is_deleted
-    def _set_is_deleted(self, value):
-        self._is_deleted = value
-    User.is_deleted = User.is_deleted.setter(_set_is_deleted)
-
 
 # ============================================================================
 # ADMIN AUTHENTICATION FIXTURE

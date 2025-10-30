@@ -14,6 +14,7 @@ The service handles:
 
 from typing import Dict, Optional
 from flask_jwt_extended import create_access_token, create_refresh_token
+from sqlalchemy import func
 from app.models.user import User
 from app.extensions import db
 
@@ -35,7 +36,7 @@ class AuthService:
         Authenticate user with email and password.
         
         Args:
-            email (str): User email address
+            email (str): User email address (case-insensitive)
             password (str): Plain text password
         
         Returns:
@@ -46,15 +47,15 @@ class AuthService:
                 }
             None: If authentication fails (user not found or password incorrect)
         """
-        # Find user by email
-        user = User.query.filter_by(email=email).first()
+        # Find user by email (case-insensitive comparison)
+        user = User.query.filter(func.lower(User.email) == func.lower(email)).first()
         
         # Check if user exists and password is correct
         if user is None or not user.check_password(password):
             return None
         
-        # Check if user is deleted
-        if user.is_deleted:
+        # Check if user is active (inactive users cannot authenticate)
+        if not user.is_active:
             return None
         
         # Generate JWT token
@@ -94,8 +95,8 @@ class AuthService:
         Raises:
             ValueError: If email already exists or validation fails
         """
-        # Check if email already exists
-        existing_user = User.query.filter_by(email=email).first()
+        # Check if email already exists (case-insensitive comparison)
+        existing_user = User.query.filter(func.lower(User.email) == func.lower(email)).first()
         if existing_user:
             raise ValueError('Email already registered')
         

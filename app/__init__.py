@@ -434,6 +434,42 @@ def _register_error_handlers(app):
             }
         }), 500
     
+    # Register JWT error handlers for consistent 401 responses
+    from app.extensions import jwt
+    
+    @jwt.invalid_token_loader
+    def invalid_token_callback(error_string):
+        """Handle invalid/malformed JWT tokens with 401 instead of 422."""
+        return jsonify({
+            'error': {
+                'message': 'Invalid or malformed authentication token',
+                'status': 401,
+                'type': 'Unauthorized'
+            }
+        }), 401
+    
+    @jwt.unauthorized_loader
+    def unauthorized_callback(error_string):
+        """Handle missing JWT tokens."""
+        return jsonify({
+            'error': {
+                'message': 'Authentication required. Missing or invalid authorization header',
+                'status': 401,
+                'type': 'Unauthorized'
+            }
+        }), 401
+    
+    @jwt.expired_token_loader
+    def expired_token_callback(jwt_header, jwt_payload):
+        """Handle expired JWT tokens."""
+        return jsonify({
+            'error': {
+                'message': 'Authentication token has expired',
+                'status': 401,
+                'type': 'Unauthorized'
+            }
+        }), 401
+    
     logger.debug("Registered error handlers for consistent error responses")
 
 

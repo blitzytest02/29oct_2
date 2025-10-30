@@ -168,6 +168,11 @@ class TestConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///:memory:'
     SQLALCHEMY_ECHO = False  # Don't log SQL queries during tests
     
+    # Configure session to not expire objects on commit (prevents DetachedInstanceError in tests)
+    SQLALCHEMY_SESSION_OPTIONS = {
+        'expire_on_commit': False
+    }
+    
     # Disable CSRF protection for testing
     WTF_CSRF_ENABLED = False
     
