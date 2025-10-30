@@ -1,0 +1,105 @@
+# requirements-test.txt - Testing-Specific Dependencies
+# 
+# This file includes all core application dependencies plus comprehensive testing
+# framework packages for Flask/Python 3 testing infrastructure.
+#
+# All versions are verified compatible with Python 3.12 and represent the latest
+# stable releases as of October 2025, ensuring security patches, performance
+# improvements, and compatibility.
+#
+# Usage:
+#   pip install -r requirements-test.txt
+#
+# This will install both the core application dependencies and all testing tools.
+
+# ============================================================================
+# Core Application Dependencies
+# ============================================================================
+# Include all production dependencies required by the Flask application
+-r requirements.txt
+
+# ============================================================================
+# Core Testing Framework
+# ============================================================================
+
+# pytest 8.3.3 - Industry-standard testing framework for Python
+# Modern testing framework with zero-config setup, detailed failure information,
+# extensive plugin support, and native assert statements for readable tests
+pytest==8.3.3
+
+# pytest-cov 5.0.0 - Code coverage measurement and reporting
+# Integrates coverage.py with pytest for measuring test coverage, generating
+# reports, and enforcing coverage thresholds (target: 85% overall)
+pytest-cov==5.0.0
+
+# pytest-mock 3.14.0 - Mocking and patching utilities for pytest
+# Provides thin wrapper around unittest.mock with pytest integration for
+# mocking external dependencies, database operations, and API calls
+pytest-mock==3.14.0
+
+# pytest-flask 1.3.0 - Flask-specific pytest fixtures and utilities
+# Provides Flask application fixtures, test client, and request context
+# management for testing Flask routes, blueprints, and application logic
+pytest-flask==1.3.0
+
+# pytest-asyncio 0.23.8 - Support for testing async Flask routes
+# Enables testing of asynchronous Flask routes and async functions with
+# pytest's async/await syntax support
+pytest-asyncio==0.23.8
+
+# coverage 7.6.1 - Underlying coverage measurement engine
+# Core coverage measurement library (installed with pytest-cov) for tracking
+# line coverage, branch coverage, and generating HTML/XML/JSON reports
+coverage==7.6.1
+
+# ============================================================================
+# JSON Schema Validation
+# ============================================================================
+
+# jsonschema 4.23.0 - JSON Schema validation library
+# Provides JSON Schema validation capabilities for validating API response
+# structures against schemas, ensuring responses conform to expected formats
+jsonschema==4.23.0
+
+# ============================================================================
+# HTTP Mocking Libraries
+# ============================================================================
+
+# responses 0.25.3 - Mock HTTP requests to external APIs
+# Library for mocking HTTP responses from external services, payment gateways,
+# email services, and third-party APIs during testing
+responses==0.25.3
+
+# requests-mock 1.12.1 - Alternative HTTP mocking library
+# Provides flexible HTTP request mocking with support for custom matchers,
+# response callbacks, and detailed request inspection
+requests-mock==1.12.1
+
+# ============================================================================
+# Test Data and Fixture Tools
+# ============================================================================
+
+# fakeredis 2.24.1 - Fake Redis implementation for testing cache operations
+# In-memory fake Redis server for testing cache operations, session storage,
+# and pub/sub functionality without requiring a real Redis instance
+fakeredis==2.24.1
+
+# factory-boy 3.3.1 - Test data factories for generating model instances
+# Provides declarative syntax for creating test data factories, managing
+# object relationships, and generating realistic test fixtures
+factory-boy==3.3.1
+
+# Faker 30.0.0 - Generate realistic fake data for testing
+# Library for generating fake but realistic data including names, emails,
+# addresses, phone numbers, dates, and other test data
+Faker==30.0.0
+
+# freezegun 1.5.1 - Mock datetime for testing time-dependent functionality
+# Allows freezing time in tests for predictable testing of time-dependent
+# code including expiration checks, timestamps, and scheduling
+freezegun==1.5.1
+
+# hypothesis 6.112.1 - Property-based testing for edge case discovery
+# Advanced testing library that automatically generates test cases to discover
+# edge cases, boundary conditions, and unexpected input scenarios
+hypothesis==6.112.1

@@ -1,0 +1,202 @@
+# =============================================================================
+# Coverage.py Configuration for Flask Testing Infrastructure
+# =============================================================================
+# Purpose: Defines coverage measurement settings for Node.js to Flask migration
+# Target: 85% overall code coverage, 80% branch coverage
+# Usage: pytest --cov=app --cov-report=html --cov-report=xml
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# [run] - Coverage Measurement Settings
+# -----------------------------------------------------------------------------
+# Controls which files are measured and how coverage data is collected
+[run]
+
+# Source directory to measure coverage for
+# Only track coverage for application code in the 'app' directory
+source = app
+
+# Enable branch coverage measurement
+# Tracks whether both True and False branches of conditionals are executed
+# Target: 80% branch coverage per Agent Action Plan section 0.10
+branch = True
+
+# Parallel mode for parallel test execution with pytest-xdist
+# Enables proper coverage measurement when running tests with pytest -n auto
+parallel = True
+
+# Files and directories to exclude from coverage measurement
+# These paths are not part of the application's testable codebase
+omit =
+    */tests/*
+    */test_*.py
+    */__pycache__/*
+    */venv/*
+    */env/*
+    */.venv/*
+    */virtualenv/*
+    */migrations/*
+    */alembic/*
+    */config.py
+    */setup.py
+    */manage.py
+    */.tox/*
+    */dist/*
+    */build/*
+
+# -----------------------------------------------------------------------------
+# [report] - Coverage Report Settings
+# -----------------------------------------------------------------------------
+# Controls how coverage results are displayed and formatted
+[report]
+
+# Decimal precision for coverage percentages
+# Display coverage as XX.XX% (e.g., 87.45%)
+precision = 2
+
+# Show line numbers of missing coverage in terminal reports
+# Helps developers quickly identify untested code paths
+show_missing = True
+
+# Include fully covered files in reports
+# Set to False to see all files, not just those with missing coverage
+skip_covered = False
+
+# Skip empty files in coverage reports
+skip_empty = True
+
+# Sort report by different criteria
+# Options: Name, Stmts, Miss, Cover, Missing
+# Default is by filename (Name)
+sort = Cover
+
+# Lines to exclude from coverage requirements
+# These patterns represent code that doesn't need test coverage
+exclude_lines =
+    # Standard pragma for intentionally uncovered code
+    pragma: no cover
+    
+    # Don't require coverage for debugging code
+    def __repr__
+    def __str__
+    
+    # Don't require coverage for abstract methods
+    @abstractmethod
+    @abc.abstractmethod
+    
+    # Don't require coverage for NotImplementedError
+    raise AssertionError
+    raise NotImplementedError
+    
+    # Don't require coverage for defensive programming assertions
+    assert False
+    
+    # Don't require coverage for script entry points
+    if __name__ == .__main__.:
+    
+    # Don't require coverage for type checking imports
+    if TYPE_CHECKING:
+    if typing.TYPE_CHECKING:
+    
+    # Don't require coverage for pass statements in abstract classes
+    pass
+    
+    # Don't require coverage for ellipsis in protocols/stubs
+    \.\.\.
+    
+    # Don't require coverage for system exit calls
+    sys.exit
+    
+    # Don't require coverage for logging statements
+    logger\.debug
+    logger\.info
+    
+    # Don't require coverage for deprecated code markers
+    @deprecated
+    warnings.warn
+
+# Fail build if coverage is below minimum threshold
+# Set to 0 to disable, or use pytest --cov-fail-under=85 in CI/CD
+# Target: 85% per Agent Action Plan section 0.10
+# fail_under = 85
+
+# -----------------------------------------------------------------------------
+# [html] - HTML Coverage Report Settings
+# -----------------------------------------------------------------------------
+# Configuration for human-readable HTML coverage reports
+[html]
+
+# Output directory for HTML coverage reports
+# Open with: open htmlcov/index.html (Mac/Linux) or start htmlcov/index.html (Windows)
+directory = htmlcov
+
+# Title for HTML report
+title = Flask Migration Test Coverage Report
+
+# Show contexts in HTML report (requires --cov-context=test)
+show_contexts = False
+
+# -----------------------------------------------------------------------------
+# [xml] - XML Coverage Report Settings
+# -----------------------------------------------------------------------------
+# Configuration for machine-readable XML reports (for CI/CD integration)
+[xml]
+
+# Output file for XML coverage report
+# Used by CI/CD tools like Jenkins, GitLab CI, GitHub Actions, Codecov
+output = coverage.xml
+
+# Package depth for XML report organization
+package_depth = 2
+
+# -----------------------------------------------------------------------------
+# [json] - JSON Coverage Report Settings
+# -----------------------------------------------------------------------------
+# Configuration for JSON format reports (for programmatic analysis)
+[json]
+
+# Output file for JSON coverage report
+output = coverage.json
+
+# Pretty-print JSON output for readability
+pretty_print = True
+
+# Show contexts in JSON report
+show_contexts = False
+
+# -----------------------------------------------------------------------------
+# [paths] - Path Mapping for Coverage Combination
+# -----------------------------------------------------------------------------
+# Maps different path representations to combine coverage from multiple environments
+[paths]
+
+# Map source paths for consistent coverage reporting across environments
+# Useful when running tests in Docker containers or different machines
+source =
+    app/
+    */app/
+    */site-packages/app/
+
+# -----------------------------------------------------------------------------
+# Coverage Measurement Strategy Notes
+# -----------------------------------------------------------------------------
+# 
+# Coverage Targets by Component (Agent Action Plan section 0.10):
+# - Overall Line Coverage: 85% minimum, 90% target
+# - Branch Coverage: 80% minimum
+# - Critical Components (Authentication/Authorization): 100%
+# - API Routes: 90% minimum
+# - Business Logic Services: 85% minimum, 95% target
+# - Data Models: 85% minimum
+# - Utility Functions: 80% minimum
+# - Error Handlers: 90% minimum
+#
+# Usage Examples:
+# - Basic coverage: pytest --cov=app
+# - With HTML report: pytest --cov=app --cov-report=html
+# - With XML for CI: pytest --cov=app --cov-report=xml
+# - Enforce threshold: pytest --cov=app --cov-fail-under=85
+# - Missing lines: pytest --cov=app --cov-report=term-missing
+# - Parallel tests: pytest -n auto --cov=app
+#
+# =============================================================================
