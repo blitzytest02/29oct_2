@@ -462,31 +462,41 @@ def create_test_transaction():
         >>> with create_test_transaction():
         ...     user = User(email='test@example.com')
         ...     db.session.add(user)
-        ...     db.session.commit()
+        ...     db.session.flush()  # Use flush instead of commit
         ...     # Transaction is rolled back on exit
         >>> assert User.query.count() == 0
     
     Yields:
         Database session with active transaction
+    
+    Note:
+        Use db.session.flush() instead of db.session.commit() inside the context
+        to avoid committing the transaction prematurely.
     """
-    # Begin nested transaction
+    # Begin nested transaction using SAVEPOINT
     connection = db.engine.connect()
     transaction = connection.begin()
     
-    # Bind session to this connection
-    session_options = dict(bind=connection, binds={})
-    session = db.session
-    old_binds = session.bind
+    # Create a new session bound to the connection
+    from sqlalchemy.orm import sessionmaker
+    Session = sessionmaker(bind=connection)
+    test_session = Session()
+    
+    # Save original session
+    original_session = db.session
     
     try:
-        # Replace session bind with our connection
-        session.bind = connection
-        yield session
+        # Replace the db.session with our test session
+        db.session = test_session
+        yield test_session
     finally:
-        # Always rollback the transaction
-        session.bind = old_binds
+        # Rollback the transaction
+        test_session.close()
         transaction.rollback()
         connection.close()
+        
+        # Restore original session
+        db.session = original_session
 
 
 def rollback_transaction() -> None:
