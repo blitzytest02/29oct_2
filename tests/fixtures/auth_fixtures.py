@@ -74,7 +74,8 @@ import jwt
 from flask_jwt_extended import create_access_token
 
 from tests.fixtures.user_fixtures import valid_user_data, existing_user
-from tests.conftest import app
+# Note: 'app' fixture is passed as a parameter to fixtures that need it,
+# not imported directly to avoid circular import with tests.conftest
 
 
 # ============================================================================

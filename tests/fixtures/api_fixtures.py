@@ -140,9 +140,8 @@ Performance Considerations:
 from typing import Dict, Any
 import pytest
 
-# Import fixtures from conftest.py and auth_fixtures.py
-# These fixtures are used via pytest dependency injection
-from tests.conftest import client
+# Import fixtures via pytest dependency injection
+# Note: 'app' and 'auth_token' fixtures are passed as parameters to avoid circular imports
 from tests.fixtures.auth_fixtures import auth_token
 
 
